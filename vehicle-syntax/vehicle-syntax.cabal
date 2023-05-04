@@ -87,6 +87,7 @@ library
   hs-source-dirs:     autogen src
   exposed-modules:
     Vehicle.Syntax.AST
+    Vehicle.Syntax.AST.Value
     Vehicle.Syntax.Parse
     Vehicle.Syntax.Prelude
     Vehicle.Syntax.Print

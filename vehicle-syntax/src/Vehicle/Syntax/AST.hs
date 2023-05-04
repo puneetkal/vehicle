@@ -12,11 +12,12 @@ import Vehicle.Syntax.AST.Instances.NoThunks ()
 import Vehicle.Syntax.AST.Meta as X
 import Vehicle.Syntax.AST.Name as X
 import Vehicle.Syntax.AST.Prog as X
-import Vehicle.Syntax.AST.Provenance as X hiding
-  ( Origin,
-    Owner,
-    Position,
-    Range,
+import Vehicle.Syntax.AST.Provenance as X
+  ( HasProvenance (..),
+    Provenance,
+    expandProvenance,
+    fillInProvenance,
+    tkProvenance,
   )
 import Vehicle.Syntax.AST.Relevance as X
 import Vehicle.Syntax.AST.Visibility as X
