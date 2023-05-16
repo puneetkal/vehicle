@@ -1,27 +1,27 @@
 Property Verify IDS
 ‘’’
+@parameter(infer=True)
+datasetSize : Nat
 
-type InputVector = Vector Rat 64    -- ERM not all rat  see below
+@parameter
+epsilon : Rat
+
+
+type InputVector = Vector Rat datasetSize
 type OutputVector = Vector Rat 1
+type NormalisedInputVector = Vector Rat datasetSize
 
 @network
-classify : InputVector  -> OutputVector
+classify : NormalisedInputVector  -> OutputVector
 
 
- -- Made names parasble but do we even need the =1, =2 etc?
+@dataset
+dataset : Vector InputVector datasetSize
 
--- TotalFwdPacket                int64
--- TotalBwdpackets               int64
--- TotalLengthofFwdPacket      int64
--- TotalLengthofBwdPacket      int64
--- FwdPacketLengthMax         float64
--- FwdPacketLengthMin         float64
--- FwdPacketLengthMean        float64
--- FwdPacketLengthStd         float64
--- BwdPacketLengthMax         float64
--- BwdPacketLengthMin         float64
--- BwdPacketLengthMean        float64
--- BwdPacketLengthStd         float64
+
+type Pertubation = Vector Rat datasetSize -- 64
+
+
 FlowIATMean =  12
 FlowIATStd  =  13
 FlowIATMax  =  14
@@ -36,65 +36,48 @@ BwdIATMean  =  22
 BwdIATStd   =  23
 BwdIATMax   =  24
 BwdIATMin   =  25
--- FwdPSHFlags                   int64
--- BwdPSHFlags                   int64
--- FwdURGFlags                   int64
--- BwdURGFlags                   int64
--- FwdHeaderLength               int64
--- BwdHeaderLength               int64
--- PacketLengthMin             float64
--- PacketLengthMax             float64
--- PacketLengthMean            float64
--- PacketLengthStd             float64
--- PacketLengthVariance        float64
--- FINFlagCount                  int64
--- SYNFlagCount                  int64
--- RSTFlagCount                  int64
--- PSHFlagCount                  int64
--- ACKFlagCount                  int64
--- URGFlagCount                  int64
--- CWRFlagCount                  int64
--- ECEFlagCount                  int64
--- DownUpRatio                 float64
--- AveragePacketSize           float64
--- FwdSegmentSizeAvg          float64
--- BwdSegmentSizeAvg          float64
--- FwdBytesBulkAvg              int64
--- FwdPacketBulkAvg             int64
--- FwdBulkRateAvg               int64
--- BwdBytesBulkAvg              int64
--- BwdPacketBulkAvg             int64
--- BwdBulkRateAvg               int64
--- SubflowFwdPackets             int64
--- SubflowFwdBytes               int64
--- SubflowBwdPackets             int64
--- SubflowBwdBytes               int64
--- FwdInitWinBytes              int64
--- BwdInitWinBytes              int64
--- FwdActDataPkts               int64
--- FwdSegSizeMin                int64
 
 
+maxValues : InputVector
+maxValues = foreach i .
+  if i == FlowIATMean then  61000000  else
+  if i == FlowIATStd  then  42000000  else
+  if i == FlowIATMax  then  74000000  else
+  if i == FlowIATMin  then  61000000  else
+  if i == FwdIATTotal then  69000000  else
+  if i == FwdIATMean  then  61000000  else
+  if i == FwdIATStd   then  43000000  else
+  if i == FwdIATMax   then  61000000  else
+  if i == FwdIATMin   then  61000000  else
+  if i == BwdIATTotal then  74000000  else
+  if i == BwdIATMean  then  61000000  else
+  if i == BwdIATStd   then  43000000  else
+  if i == BwdIATMax   then  74000000  else
+  if i == BwdIATMin   then  61000000  else 0
+
+minValues : InputVector
+minValues = foreach i .  if i == FlowIATMin then -2 else 0
 
 
+normalise : InputVector -> NormalisedInputVector
+normalise x = foreach i . (x ! i - minValues ! i) / (maxValues ! i - minValues ! i )
 
+
+normClassify : InputVector -> OutputVector
+normClassify x = classify (normalise x)
 
 
 malicious : InputVector -> Bool
-malicious x = classify x ! 0 > 0.5
+malicious x = normClassify x ! 0 > 0.5
 
 nonMalicious : InputVector -> Bool
-nonMalicious x = classify x ! 0 < 0.5
+nonMalicious x = normClassify x ! 0 < 0.5
 
 sameClassification : InputVector -> InputVector -> Bool
 sameClassification x1 x2 =
   (malicious x1 and malicious x2) or (nonMalicious x1 and nonMalicious x2)
 
-type Pertubation = Vector Rat 64 -- 64
 
-@parameter
-epsilon : Rat        -- if perturbed by epsilon in problem space, what does perturbation look like in input space
-                     -- epsilon over min and max of that feature  (is that what pickle object is doing?)
 
 validPertubation : Pertubation -> Bool
 validPertubation p = forall i .
@@ -106,11 +89,7 @@ robustAround : InputVector -> Bool
 robustAround x = forall (p : Pertubation) .
   validPertubation p => sameClassification x (x + p)
 
-@parameter(infer=True)
-datasetSize : Nat
 
-@dataset
-dataset : Vector InputVector datasetSize
 
 @property
 robust : Vector Bool datasetSize
