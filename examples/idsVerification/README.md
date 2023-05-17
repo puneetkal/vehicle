@@ -15,9 +15,9 @@ The controller can be verified against the specification by running the followin
 
 ```bash
 vehicle compileAndVerify \
-  --specification examples/idsVerification/sec-prop.vcl \
-  --network controller:examples/idsVerification/dnn_2ep.onnx \
-  --verifier Marabou \
+  --specification sec-prop.vcl \
+  --network classify:dnn_2ep.onnx \
+  --parameter epsilon:0.01 \
+  --dataset dataset:features.idx \
+  --verifier Marabou
 ```
-
-

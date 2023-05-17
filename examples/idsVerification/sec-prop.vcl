@@ -1,5 +1,3 @@
-Property Verify IDS
-‘’’
 @parameter(infer=True)
 datasetSize : Nat
 
@@ -7,9 +5,9 @@ datasetSize : Nat
 epsilon : Rat
 
 
-type InputVector = Vector Rat datasetSize
+type InputVector = Vector Rat 64
 type OutputVector = Vector Rat 1
-type NormalisedInputVector = Vector Rat datasetSize
+type NormalisedInputVector = Vector Rat 64
 
 @network
 classify : NormalisedInputVector  -> OutputVector
@@ -19,7 +17,7 @@ classify : NormalisedInputVector  -> OutputVector
 dataset : Vector InputVector datasetSize
 
 
-type Pertubation = Vector Rat datasetSize -- 64
+type Pertubation = Vector Rat 64
 
 
 FlowIATMean =  12
@@ -39,21 +37,9 @@ BwdIATMin   =  25
 
 
 maxValues : InputVector
-maxValues = foreach i .
-  if i == FlowIATMean then  61000000  else
-  if i == FlowIATStd  then  42000000  else
-  if i == FlowIATMax  then  74000000  else
-  if i == FlowIATMin  then  61000000  else
-  if i == FwdIATTotal then  69000000  else
-  if i == FwdIATMean  then  61000000  else
-  if i == FwdIATStd   then  43000000  else
-  if i == FwdIATMax   then  61000000  else
-  if i == FwdIATMin   then  61000000  else
-  if i == BwdIATTotal then  74000000  else
-  if i == BwdIATMean  then  61000000  else
-  if i == BwdIATStd   then  43000000  else
-  if i == BwdIATMax   then  74000000  else
-  if i == BwdIATMin   then  61000000  else 0
+maxValues =
+  [
+  ]
 
 minValues : InputVector
 minValues = foreach i .  if i == FlowIATMin then -2 else 0
@@ -77,8 +63,6 @@ sameClassification : InputVector -> InputVector -> Bool
 sameClassification x1 x2 =
   (malicious x1 and malicious x2) or (nonMalicious x1 and nonMalicious x2)
 
-
-
 validPertubation : Pertubation -> Bool
 validPertubation p = forall i .
   if 11 <= i < 26
@@ -89,10 +73,6 @@ robustAround : InputVector -> Bool
 robustAround x = forall (p : Pertubation) .
   validPertubation p => sameClassification x (x + p)
 
-
-
 @property
 robust : Vector Bool datasetSize
 robust = foreach i . robustAround (dataset ! i)
-
-‘’’
