@@ -1,0 +1,201 @@
+{
+  "specificationPlan": [
+    [
+      "robust",
+      {
+        "tag": "SingleProperty",
+        "contents": [
+          [
+            "robust",
+            []
+          ],
+          {
+            "tag": "Query",
+            "contents": {
+              "queries": {
+                "tag": "NonTrivial",
+                "contents": {
+                  "unDisjunctAll": [
+                    [
+                      [
+                        [
+                          "robust",
+                          []
+                        ],
+                        1
+                      ],
+                      {
+                        "variableInfo": {
+                          "unnormalisedVariableInfo": [
+                            [
+                              "p",
+                              [
+                                2
+                              ]
+                            ]
+                          ],
+                          "normalisedVariableInfo": [
+                            [
+                              1,
+                              {
+                                "tag": "FourierMotzkinSolution",
+                                "contents": {
+                                  "upperBounds": [
+                                    {
+                                      "assertionRel": "LessThanOrEqualTo",
+                                      "assertionExpr": {
+                                        "numberOfVars": 6,
+                                        "constantValue": -1.0e-2,
+                                        "coefficients": {
+                                          "1": 1
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "lowerBounds": [
+                                    {
+                                      "assertionRel": "LessThanOrEqualTo",
+                                      "assertionExpr": {
+                                        "numberOfVars": 6,
+                                        "constantValue": -1.0e-2,
+                                        "coefficients": {
+                                          "1": -1
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ],
+                            [
+                              0,
+                              {
+                                "tag": "FourierMotzkinSolution",
+                                "contents": {
+                                  "upperBounds": [
+                                    {
+                                      "assertionRel": "LessThanOrEqualTo",
+                                      "assertionExpr": {
+                                        "numberOfVars": 6,
+                                        "constantValue": -1.0e-2,
+                                        "coefficients": {
+                                          "0": 1
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "lowerBounds": [
+                                    {
+                                      "assertionRel": "LessThanOrEqualTo",
+                                      "assertionExpr": {
+                                        "numberOfVars": 6,
+                                        "constantValue": -1.0e-2,
+                                        "coefficients": {
+                                          "0": -1
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          ]
+                        },
+                        "metaNetwork": [
+                          [
+                            "classify",
+                            "dnn_3ep.onnx"
+                          ]
+                        ]
+                      }
+                    ],
+                    [
+                      [
+                        [
+                          "robust",
+                          []
+                        ],
+                        2
+                      ],
+                      {
+                        "variableInfo": {
+                          "unnormalisedVariableInfo": [
+                            [
+                              "p",
+                              [
+                                2
+                              ]
+                            ]
+                          ],
+                          "normalisedVariableInfo": [
+                            [
+                              1,
+                              {
+                                "tag": "GaussianSolution",
+                                "contents": {
+                                  "solutionEquality": {
+                                    "numberOfVars": 6,
+                                    "constantValue": -3000,
+                                    "coefficients": {
+                                      "3": 1,
+                                      "1": -1
+                                    }
+                                  }
+                                }
+                              }
+                            ],
+                            [
+                              0,
+                              {
+                                "tag": "GaussianSolution",
+                                "contents": {
+                                  "solutionEquality": {
+                                    "numberOfVars": 6,
+                                    "constantValue": -1000,
+                                    "coefficients": {
+                                      "2": 1,
+                                      "0": -1
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          ]
+                        },
+                        "metaNetwork": [
+                          [
+                            "classify",
+                            "dnn_3ep.onnx"
+                          ]
+                        ]
+                      }
+                    ]
+                  ]
+                }
+              },
+              "negated": true
+            }
+          }
+        ]
+      }
+    ]
+  ],
+  "resourceIntegrityInfo": {
+    "specificationSummary": {
+      "name": "specification",
+      "filePath": "sec-prop2.vcl",
+      "fileHash": -7352612440785681314
+    },
+    "parameterSummaries": {
+      "epsilon": "0.01"
+    },
+    "networkSummaries": [
+      {
+        "name": "classify",
+        "filePath": "dnn_3ep.onnx",
+        "fileHash": -2460633051139756900
+      }
+    ],
+    "datasetSummaries": []
+  }
+}

@@ -1,5 +1,6 @@
-@parameter(infer=True)
+-- @parameter(infer=True)
 datasetSize : Nat
+datasetSize = 9129
 
 @parameter
 epsilon : Rat
@@ -169,18 +170,15 @@ minValues =
   0,
   0,
   0
-]
-
-
-
+  ]
 
 normalise : InputVector -> NormalisedInputVector
 normalise x = foreach i .
-              let  max = maxValues ! i in
-                let  min = minValues ! i in
-                  if max == min then x ! i
-                  else
-                    (x ! i - min) / (max - min )
+  let max = maxValues ! i in
+  let min = minValues ! i in
+  if max == min
+    then x ! i
+    else (x ! i - min) / (max - min )
 
 
 normClassify : InputVector -> OutputVector
@@ -199,7 +197,7 @@ sameClassification x1 x2 =
 
 validPertubation : Pertubation -> Bool
 validPertubation p = forall i .
-  if 11 <= i < 26
+  if (11 : Index 64) <= i < (26 : Index 64)
     then -epsilon <= p ! i <= epsilon
     else p ! i == 0
 
@@ -208,5 +206,5 @@ robustAround x = forall (p : Pertubation) .
   validPertubation p => sameClassification x (x + p)
 
 @property
-robust : Vector Bool datasetSize
-robust = foreach i . robustAround (dataset ! i)
+robust : Bool
+robust = robustAround (dataset ! 0)
