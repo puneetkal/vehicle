@@ -1,4 +1,6 @@
-[![ci](https://github.com/vehicle-lang/vehicle/actions/workflows/ci.yml/badge.svg)](https://github.com/vehicle-lang/vehicle/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/vehicle-lang)](https://pypi.org/project/vehicle-lang/)
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/vehicle-lang/vehicle)
+[![GitHub Workflow Status](https://github.com/vehicle-lang/vehicle/actions/workflows/ci.yml/badge.svg)](https://github.com/vehicle-lang/vehicle/actions/workflows/ci.yml)
 [![readthedocs status](https://readthedocs.org/projects/vehicle-lang/badge/?version=latest)](https://vehicle-lang.readthedocs.io/en/latest/)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/vehicle-lang/vehicle/dev.svg)](https://results.pre-commit.ci/latest/github/vehicle-lang/vehicle/dev)
 
@@ -23,12 +25,9 @@ that use neural networks as subcomponents.
 The generated ITP code is tightly linked to the actual deployed network, so changes
 to the network will result in errors when checking the larger proof.
 
-**Note**: Vehicle is a work in progress. No stable version is yet available and breaking
-changes will occur frequently so use at your own risk. While verification mode and exporting to ITPs is functional, training mode is still under active development.
-
 ## Documentation
 
-- [User manual](https://vehicle-lang.readthedocs.io/en/latest/) - currently a work in progress.
+- [User manual](https://vehicle-lang.readthedocs.io/en/latest/)
 - [Workshop paper (FOMLAS'22) motivating the Vehicle design](https://www.macs.hw.ac.uk/~ek19/vehicle.pdf)
 - [Vehicle's Type Checker (in CPP'23)](https://laiv.uk/wp-content/uploads/2022/12/vehicle.pdf)
 
