@@ -5,22 +5,27 @@ datasetSize = 9129
 @parameter
 epsilon : Rat
 
-
 type InputVector = Vector Rat 64
 type OutputVector = Vector Rat 1
 type NormalisedInputVector = Vector Rat 64
 
-@network
-classify : NormalisedInputVector  -> OutputVector
+type Label = Index 2
 
+malicious = 0
+nonMalicious = 1
+
+@network
+classify : NormalisedInputVector -> OutputVector
 
 @dataset
-dataset : Vector InputVector datasetSize
+inputDataset : Vector InputVector datasetSize
 
+@dataset
+outputDataset : Vector Label datasetSize
 
 type Pertubation = Vector Rat 64
 
-
+{-
 FlowIATMean =  12
 FlowIATStd  =  13
 FlowIATMax  =  14
@@ -35,7 +40,7 @@ BwdIATMean  =  22
 BwdIATStd   =  23
 BwdIATMax   =  24
 BwdIATMin   =  25
-
+-}
 
 maxValues : InputVector
 maxValues =
@@ -180,11 +185,9 @@ normalise x = foreach i .
     then x ! i
     else (x ! i - min) / (max - min )
 
-
-normClassify : InputVector -> OutputVector
-normClassify x = classify (normalise x)
-
-
+normClassify : InputVector -> Label
+normClassify x = if classify (normalise x) ! 0 > 0.5 then 1 else 0
+{-
 malicious : InputVector -> Bool
 malicious x = normClassify x ! 0 > 0.5
 
@@ -194,17 +197,17 @@ nonMalicious x = normClassify x ! 0 < 0.5
 sameClassification : InputVector -> InputVector -> Bool
 sameClassification x1 x2 =
   (malicious x1 and malicious x2) or (nonMalicious x1 and nonMalicious x2)
-
+-}
 validPertubation : Pertubation -> Bool
 validPertubation p = forall i .
   if (11 : Index 64) <= i < (26 : Index 64)
     then -epsilon <= p ! i <= epsilon
     else p ! i == 0
 
-robustAround : InputVector -> Bool
-robustAround x = forall (p : Pertubation) .
-  validPertubation p => sameClassification x (x + p)
+robustAround : InputVector -> Label -> Bool
+robustAround x l = forall (p : Pertubation) .
+  validPertubation p => normClassify x == l
 
 @property
 robust : Bool
-robust = robustAround (dataset ! 0)
+robust = robustAround (inputDataset ! 0) (outputDataset ! 0)
