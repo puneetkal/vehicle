@@ -87,7 +87,6 @@ where
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe)
 import Vehicle.Compile.Prelude
-import Vehicle.Compile.Type.Core
 import Vehicle.Compile.Type.Subsystem.Linearity.Core
 import Vehicle.Compile.Type.Subsystem.Polarity.Core
 import Vehicle.Compile.Type.Subsystem.Standard.Core
@@ -110,13 +109,13 @@ class DSL expr where
   free :: StdLibFunction -> expr
 
 newtype DSLExpr types = DSL
-  { unDSL :: Provenance -> DBLevel -> NormalisableExpr types
+  { unDSL :: Provenance -> Lv -> NormalisableExpr types
   }
 
-fromDSL :: Provenance -> DSLExpr types -> CheckedExpr types
+fromDSL :: Provenance -> DSLExpr types -> NormalisableExpr types
 fromDSL p e = unDSL e p 0
 
-boundVar :: DBLevel -> DSLExpr types
+boundVar :: Lv -> DSLExpr types
 boundVar i = DSL $ \p j -> BoundVar p (dbLevelToIndex j i)
 
 approxPiForm :: Maybe Name -> Visibility -> BinderDisplayForm
@@ -133,14 +132,14 @@ instance DSL (DSLExpr types) where
     let varType = unDSL binderType p i
         var = boundVar i
         form = approxPiForm name v
-        binder = Binder p form v r () varType
+        binder = Binder p form v r varType
         body = unDSL (bodyFn var) p (i + 1)
      in Pi p binder body
 
   lam name v r binderType bodyFn = DSL $ \p i ->
     let varType = unDSL binderType p i
         var = boundVar i
-        binder = Binder p (BinderDisplayForm (OnlyName name) True) v r () varType
+        binder = Binder p (BinderDisplayForm (OnlyName name) True) v r varType
         body = unDSL (bodyFn var) p (i + 1)
      in Lam p binder body
 

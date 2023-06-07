@@ -14,7 +14,7 @@ import Vehicle.Compile.Type.Meta.Map qualified as MetaMap
 import Vehicle.Compile.Type.Meta.Variable (MetaInfo (..))
 import Vehicle.Expr.DeBruijn
 import Vehicle.Expr.Normalisable
-import Vehicle.Expr.Normalised (GluedExpr (..), NormExpr (..))
+import Vehicle.Expr.Normalised (GluedExpr (..), Value (..))
 
 -- | Substitutes meta-variables through the provided object, returning the
 -- updated object and the set of meta-variables within the object for which
@@ -42,7 +42,7 @@ instance (MetaSubstitutable m a) => MetaSubstitutable m (NonEmpty a) where
 instance (MetaSubstitutable m a) => MetaSubstitutable m (GenericArg a) where
   subst = traverse subst
 
-instance (MetaSubstitutable m a) => MetaSubstitutable m (GenericBinder value a) where
+instance (MetaSubstitutable m a) => MetaSubstitutable m (GenericBinder a) where
   subst = traverse subst
 
 instance (MonadNorm types m) => MetaSubstitutable m (NormalisableExpr types) where
@@ -84,7 +84,7 @@ substApp p (fun@(Meta _ m), mArgs) = do
     substArgs e args = return $ normAppList p e args
 substApp p (fun, args) = normAppList p <$> subst fun <*> subst args
 
-instance (MonadNorm types m) => MetaSubstitutable m (NormExpr types) where
+instance (MonadNorm types m) => MetaSubstitutable m (Value types) where
   subst expr = case expr of
     VMeta m args -> do
       metaSubst <- getMetaSubstitution

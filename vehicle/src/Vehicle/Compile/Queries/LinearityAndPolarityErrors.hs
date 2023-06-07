@@ -33,7 +33,8 @@ diagnoseNonLinearity queryFormat prog propertyIdentifier = do
   setCallDepth 0
   logDebug MinDetail $
     "ERROR: found non-linear property. Switching to linearity type-checking mode for"
-      <+> quotePretty propertyIdentifier <> line
+      <+> quotePretty propertyIdentifier
+      <> line
 
   Main typedDecls <- typeCheckWithSubsystem prog
 
@@ -57,7 +58,8 @@ diagnoseAlternatingQuantifiers queryFormat prog propertyIdentifier = do
   setCallDepth 0
   logDebug MinDetail $
     "ERROR: found property with alterating quantifiers. Switching to polarity type-checking mode for"
-      <+> quotePretty propertyIdentifier <> line
+      <+> quotePretty propertyIdentifier
+      <> line
 
   Main typedDecls <- typeCheckWithSubsystem prog
 
@@ -90,7 +92,7 @@ resolveInstanceArguments prog =
     logCompilerPassOutput $ prettyFriendly result
     return result
   where
-    builtinUpdateFunction :: BuiltinUpdate m DBBinding DBIndex StandardBuiltin StandardBuiltin
+    builtinUpdateFunction :: BuiltinUpdate m () Ix StandardBuiltin StandardBuiltin
     builtinUpdateFunction p1 p2 b args = case b of
       CType (StandardTypeClassOp {}) -> do
         let (inst, remainingArgs) = findInstanceArg args

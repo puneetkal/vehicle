@@ -69,9 +69,11 @@ getInstallDir verbosity =
     unsafeGetInstallDir = do
       installDir <- getEnv "INSTALLDIR"
       installDirExists <- doesDirectoryExist installDir
-      unless installDirExists $
-        die' verbosity $
-          "INSTALLDIR '" <> installDir <> "' does not exist"
+      unless installDirExists
+        $ die' verbosity
+        $ "INSTALLDIR '"
+        <> installDir
+        <> "' does not exist"
       return $ Just installDir
 
     doesNotExistErrorHandler e =
@@ -92,8 +94,8 @@ generatePygmentsLexer verbosity programDb = do
       "src" </> "vehicle_lang" </> "pygments",
       "vendor" </> "vehicle-syntax" </> "src" </> "Vehicle" </> "Syntax" </> "External.cf"
     ]
-  let source = ("src" </> "vehicle_lang" </> "pygments" </> "external")
-  let target = ("src" </> "vehicle_lang" </> "pygments" </> "_external")
+  let source = "src" </> "vehicle_lang" </> "pygments" </> "external"
+  let target = "src" </> "vehicle_lang" </> "pygments" </> "_external"
   targetExists <- doesDirectoryExist target
   when targetExists $ removeDirectoryRecursive target
   renameDirectory source target

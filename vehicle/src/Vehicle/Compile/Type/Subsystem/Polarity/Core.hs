@@ -139,20 +139,20 @@ type PolarityConstraintContext = ConstraintContext PolarityType
 
 type PolarityConstraint = Constraint PolarityType
 
--- NormExpr
-type PolarityNormExpr = NormExpr PolarityType
+-- Value
+type PolarityNormExpr = Value PolarityType
 
-type PolarityNormBinder = NormBinder PolarityType
+type PolarityNormBinder = VBinder PolarityType
 
-type PolarityNormArg = NormArg PolarityType
+type PolarityNormArg = VArg PolarityType
 
-type PolarityNormType = NormType PolarityType
+type PolarityNormType = VType PolarityType
 
 type PolaritySpine = Spine PolarityType
 
 type PolarityEnv = Env PolarityType
 
-pattern PolarityExpr :: Provenance -> Polarity -> Expr binder var (NormalisableBuiltin PolarityType)
+pattern PolarityExpr :: Provenance -> Polarity -> Expr var (NormalisableBuiltin PolarityType)
 pattern PolarityExpr p pol = Builtin p (CType (Polarity pol))
 
 pattern VPolarityExpr :: Polarity -> PolarityNormExpr

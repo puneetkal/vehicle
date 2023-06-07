@@ -7,10 +7,10 @@ import Data.List.NonEmpty (NonEmpty)
 import Prettyprinter (list)
 import Vehicle.Backend.Prelude
 import Vehicle.Compile.Prelude
-import Vehicle.Compile.Type.Core
 import Vehicle.Compile.Type.Subsystem.Linearity.Core
 import Vehicle.Compile.Type.Subsystem.Polarity.Core
 import Vehicle.Compile.Type.Subsystem.Standard.Core
+import Vehicle.Expr.Normalisable (NormalisableArg)
 import Vehicle.Syntax.Parse (ParseError)
 import Vehicle.Verify.Core (QueryFormatID)
 
@@ -51,7 +51,7 @@ data CompileError
       StandardType -- The expected type.
   | MissingExplicitArg
       BoundDBCtx -- The context at the time of the failure
-      (UncheckedArg StandardBuiltinType) -- The non-explicit argument
+      (NormalisableArg StandardBuiltinType) -- The non-explicit argument
       StandardType -- Expected type of the argument
   | UnsolvedConstraints (NonEmpty (WithContext StandardConstraint))
   | UnsolvedMetas (NonEmpty (MetaID, Provenance))
@@ -113,7 +113,7 @@ data CompileError
   | UnsupportedVariableType QueryFormatID Identifier Provenance Name StandardNormType StandardNormType [Builtin]
   | UnsupportedAlternatingQuantifiers QueryFormatID DeclProvenance Quantifier Provenance PolarityProvenance
   | UnsupportedNonLinearConstraint QueryFormatID DeclProvenance Provenance LinearityProvenance LinearityProvenance
-  | UnsupportedNegatedOperation DifferentiableLogic Provenance (NamedExpr StandardBuiltin)
+  | UnsupportedNegatedOperation DifferentiableLogic Provenance (Expr Name StandardBuiltin)
   deriving (Show)
 
 --------------------------------------------------------------------------------
@@ -124,7 +124,8 @@ unexpectedExpr pass name =
   "encountered unexpected expression"
     <+> squotes name
     <+> "during"
-    <+> pass <> "."
+    <+> pass
+    <> "."
 
 -- | Should be used in preference to `developerError` whenever in the error
 -- monad, as unlike the latter this method does not prevent logging.
@@ -173,7 +174,8 @@ internalScopingError :: (MonadError CompileError m) => Doc () -> Identifier -> m
 internalScopingError pass ident =
   compilerDeveloperError $
     "Internal scoping error during"
-      <+> pass <> ":"
-      <+> "declaration"
-      <+> quotePretty ident
-      <+> "not found in scope..."
+      <+> pass
+      <> ":"
+        <+> "declaration"
+        <+> quotePretty ident
+        <+> "not found in scope..."

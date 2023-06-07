@@ -20,7 +20,7 @@ import Vehicle.Compile.Prelude
 import Vehicle.Compile.Print (prettyVerbose)
 import Vehicle.Compile.Type.Subsystem.Standard (StandardExpr, TypeCheckedBinder, TypeCheckedExpr, TypeCheckedType)
 import Vehicle.Compile.Type.Subsystem.Standard.Patterns
-import Vehicle.Expr.DeBruijn (DBLevel, liftDBIndices, substDBInto)
+import Vehicle.Expr.DeBruijn (Lv, liftDBIndices, substDBInto)
 import Vehicle.Test.Unit.Common (unitTestCase)
 
 --------------------------------------------------------------------------------
@@ -106,12 +106,12 @@ substTest SubstitutionTest {..} =
               <> indent 2 (prettyVerbose expr)
               <> line
               <> "to be equal to:"
-              <+> line
-                <> indent 2 (prettyVerbose expected)
-                <> line
-                <> "but was:"
-              <+> line
-                <> indent 2 (prettyVerbose actual)
+                <+> line
+              <> indent 2 (prettyVerbose expected)
+              <> line
+              <> "but was:"
+                <+> line
+              <> indent 2 (prettyVerbose actual)
 
     return $ assertBool errorMessage (actual == expected)
 
@@ -120,7 +120,7 @@ substTest SubstitutionTest {..} =
 
 data LiftingTest = LiftingTest
   { name :: String,
-    amount :: DBLevel,
+    amount :: Lv,
     input :: TypeCheckedExpr,
     expected :: TypeCheckedExpr
   }
@@ -137,14 +137,14 @@ liftTest LiftingTest {..} =
               <> indent 2 (prettyVerbose input)
               <> line
               <> "by"
-              <+> pretty amount
-              <+> "to be equal to:"
-              <+> line
-                <> indent 2 (prettyVerbose expected)
-                <> line
-                <> "but was:"
-              <+> line
-                <> indent 2 (prettyVerbose actual)
+                <+> pretty amount
+                <+> "to be equal to:"
+                <+> line
+              <> indent 2 (prettyVerbose expected)
+              <> line
+              <> "but was:"
+                <+> line
+              <> indent 2 (prettyVerbose actual)
 
     return $ assertBool errorMessage (actual == expected)
 
@@ -152,4 +152,4 @@ p :: Provenance
 p = mempty
 
 binding :: TypeCheckedType -> TypeCheckedBinder
-binding = Binder p (BinderDisplayForm (OnlyName "x") False) Explicit Relevant ()
+binding = Binder p (BinderDisplayForm (OnlyName "x") False) Explicit Relevant
