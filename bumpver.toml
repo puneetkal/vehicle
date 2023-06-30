@@ -1,5 +1,5 @@
 [bumpver]
-current_version = "v0.3.3"
+current_version = "v0.5.1"
 version_pattern = "vMAJOR.MINOR.PATCH"
 commit_message = "Bump version {old_version} -> {new_version}"
 commit = true
@@ -8,13 +8,14 @@ push = true
 
 [bumpver.file_patterns]
 "bumpver.toml" = ['current_version = "{version}"']
-"py-vehicle-lang/vehicle-python-binding.cabal" = [
+"vehicle-python/vehicle-python-binding.cabal" = [
     "^version:         {pep440_version}$",
 ]
-"HACKING.md" = [
-  "``git checkout {version}``"
+"CONTRIBUTING.md" = [
+    "This should print `{pep440_version}`.",
+    "vehicle_lang-{pep440_version}-",
 ]
-"py-vehicle-lang/src/vehicle_lang/_version.py" = [
+"vehicle-python/src/vehicle_lang/_version.py" = [
     '^VERSION: str = "{pep440_version}"$'
 ]
 "vehicle/vehicle.cabal" = ["^version:            {pep440_version}$"]

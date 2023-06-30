@@ -9,9 +9,8 @@
     "run": "vehicle compile -s spec.vcl -t MarabouQueries -o Marabou.queries/ --network controller:controller.onnx",
     "needs": ["spec.vcl", "controller.onnx"],
     "produces": ["Marabou.queries/*.txt", "Marabou.queries/.vcl-plan"],
-    "ignore":
-    {
-      "matches": ".*\"fileHash\".*"
+    "ignore": {
+      "lines": ".*\"fileHash\".*"
     }
   },
   {
@@ -22,14 +21,15 @@
   },
   {
     "name": "LossFunction",
-    "run": "vehicle compile -s spec.vcl -t LossFunction -o LossFunction.json --network controller:controller.onnx",
+    "run": "vehicle compile -s spec.vcl -t DL2Loss -o LossFunction.json --network controller:controller.onnx",
     "needs": ["spec.vcl"],
     "produces": ["LossFunction.json"],
     "enabled": false
   },
   {
     "name": "MarabouVerify",
-    "run": "vehicle verify -q Marabou.queries -v Marabou",
-    "needs": ["controller.onnx", "Marabou.queries"]
+    "run": "vehicle verify -s spec.vcl -v Marabou --network controller:controller.onnx",
+    "needs": ["spec.vcl", "controller.onnx"],
+    "external": ["Marabou"]
   }
 ]

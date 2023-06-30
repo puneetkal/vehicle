@@ -1,18 +1,45 @@
 # Changelog for Vehicle
 
+## Version 0.5.1
+
+* Fixed bug where reconstructing counter-examples from Marabou would sometimes crash.
+
+* Improved command-line output from the `vehicle verify` command.
+
+* Added warnings when quantified variables aren't related by equalities to network input and outputs.
+
+## Version 0.5.0
+
+* Asymptotically significant speedup when compiling specifications with very large
+  tensors in them and a corresponding reduction in size of the `.vcl-plan` files being generated.
+
+## Version 0.4.1
+
+* Fixed bug where disjunctions were being evaluated incorrectly.
+
 ## Version 0.4.0
+
+### Command-line changes
+
+* The `compileAndVerify` command has been merged into the `verify` command.
+  If the `specification` argument for the `verify` command is a folder containing a `.vclp` file then the behaviour remains identical to the `verify` command of the previous version.
+  If it points to `.vcl` file then the behaviour is that of the removed `compileAndVerify` command.
+
+* The names of the loss function values for the `verify` command's `target` argument have changed from the format `LossFunction-X` to the format `XLoss`, e.g. `LossFunction-Godel` to `GodelLoss`.
 
 ### Bug fixes
 
-* Fixed bug where sometimes using literal numbers on one side of an inequality would fail to type-check
-  (e.g. `forall (i : Index 5) . i <= 1`).
+* Fixed bug where `vehicle compile --help` gave the wrong list of available values for the `target` argument.
 
-* Fixed issue where compiling an expression with an `if` in to Marabou would fail if one of the branches
-  was trivial.
+* Fixed bug where sometimes using literal numbers on one side of an inequality would fail to type-check (e.g. `forall (i : Index 5) . i <= 1`).
+
+* Fixed issue where compiling an expression with an `if` in to Marabou would fail if one of the branches was trivial.
 
 ### Errors
 
 * Improved informativeness of error messages thrown when attempting to verify properties with multiple network applications.
+
+* Improved error reporting when Marabou is automatically terminated by the OS (e.g. runs out of memory)
 
 ## Version 0.3.0
 
