@@ -1,7 +1,3 @@
--- @parameter(infer=True)
-datasetSize : Nat
-datasetSize = 9129
-
 @parameter
 epsilon : Rat
 
@@ -13,17 +9,6 @@ type Label = Index 2
 
 malicious = 0
 nonMalicious = 1
-
-@network
-classify : NormalisedInputVector -> OutputVector
-
-@dataset
-inputDataset : Vector InputVector datasetSize
-
-@dataset
-outputDataset : Vector Label datasetSize
-
-type Pertubation = Vector Rat 64
 
 {-
 FlowIATMean =  12
@@ -177,6 +162,9 @@ minValues =
   0
   ]
 
+validInput : InputVector -> Bool
+validInput x = forall i . minValues ! i <= x ! i <= maxValues ! i
+
 normalise : InputVector -> NormalisedInputVector
 normalise x = foreach i .
   let max = maxValues ! i in
@@ -185,19 +173,22 @@ normalise x = foreach i .
     then x ! i
     else (x ! i - min) / (max - min )
 
+-------------
+-- Network --
+-------------
+
+@network
+classify : NormalisedInputVector -> OutputVector
+
 normClassify : InputVector -> Label
 normClassify x = if classify (normalise x) ! 0 > 0.5 then 1 else 0
-{-
-malicious : InputVector -> Bool
-malicious x = normClassify x ! 0 > 0.5
 
-nonMalicious : InputVector -> Bool
-nonMalicious x = normClassify x ! 0 < 0.5
+----------------
+-- Robustness --
+----------------
 
-sameClassification : InputVector -> InputVector -> Bool
-sameClassification x1 x2 =
-  (malicious x1 and malicious x2) or (nonMalicious x1 and nonMalicious x2)
--}
+type Pertubation = Vector Rat 64
+
 validPertubation : Pertubation -> Bool
 validPertubation p = forall i .
   if (11 : Index 64) <= i < (26 : Index 64)
@@ -206,7 +197,21 @@ validPertubation p = forall i .
 
 robustAround : InputVector -> Label -> Bool
 robustAround x l = forall (p : Pertubation) .
-  validPertubation p => normClassify x == l
+  validPertubation p and validInput (x + p) => normClassify (p + x) == l
+
+-------------
+-- Dataset --
+-------------
+
+-- @parameter(infer=True)
+datasetSize : Nat
+datasetSize = 9129
+
+@dataset
+inputDataset : Vector InputVector datasetSize
+
+@dataset
+outputDataset : Vector Label datasetSize
 
 @property
 robust : Bool
