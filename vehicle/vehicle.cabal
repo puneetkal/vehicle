@@ -38,6 +38,11 @@ flag optimise-heavily
   default:     False
   description: Enable some expensive optimisations when compiling Vehicle.
 
+flag selective-unfolding
+  default:     True
+  description:
+    Enable selective unfolding of definitions when compiling Vehicle.
+
 common common-language
   default-language:   Haskell2010
   default-extensions:
@@ -91,6 +96,9 @@ common common-library
   if flag(optimise-heavily)
     cpp-options: -DoptimiseHeavily
     ghc-options: -fexpose-all-unfoldings -fspecialise-aggressively
+
+  if flag(selective-unfolding)
+    cpp-options: -DselectiveUnfolding
 
 common common-executable
   import:      common-language

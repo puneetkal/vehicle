@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Vehicle.Backend.Queries.UserVariableElimination
@@ -9,7 +10,9 @@ where
 -- Need to import this qualified as in GHC 9.6 and above liftA2 is part of Prelude
 -- and therefore importing it normally gives us an "Unused import warning" on
 -- 9.6 and above, but not earlier versions.
+#ifdef selectiveUnfolding
 import Control.Applicative qualified as Applicative (liftA2)
+#endif
 import Control.Monad.Except (MonadError (..))
 import Control.Monad.Reader (MonadReader (..), runReaderT)
 import Data.Foldable (foldrM)
@@ -157,6 +160,7 @@ tryToSolveForUnreducedUserVariables variables expr =
               solutions <- traverse (solutionToExpr (mixedVariableCtx variables)) varsSolved
               return (solutions, finalExpr, gaussianReconstructionSteps)
 
+#ifdef selectiveUnfolding
 -- | Tries to extract any vector level equalities that are suitable for plugging into
 -- Gaussian elimination.
 extractSolvableVectorEqualities ::
@@ -189,59 +193,6 @@ extractSolvableVectorEqualities mixedVariables = go
       -- could be to further convert to DNF here.
       Disjunct {} ->
         return ([], Just expr)
-
--- | Converts a Gaussian elimination solution for a user variable back to a
--- Vehicle expression.
-solutionToExpr ::
-  (MonadCompile m) =>
-  MixedVariableCtx ->
-  (UserVariable, SparseLinearExpr MixedVariable) ->
-  m (UserVariable, WHNFValue Builtin)
-solutionToExpr variables (var, Sparse {..}) = do
-  let findVarIx v = Ix $ fromMaybe (developerError ("Variable" <+> pretty var <+> "not found")) (v `elemIndex` variables)
-  let toExprVar v = VBoundVar (dbIndexToLevel (Lv $ length variables) (findVarIx v)) []
-  let addFn e1 e2 = mkRatVectorAdd (VNatLiteral <$> dimensions) [e1, e2]
-  let subFn e1 e2 = mkRatVectorSub (VNatLiteral <$> dimensions) [e1, e2]
-  -- Need to negate the coefficients as we're rearranging the equation.
-  let combFn (v, c) e
-        | v == UserVar var = e
-        | c == 1.0 = subFn e (toExprVar v)
-        | c == -1.0 = addFn e (toExprVar v)
-        | otherwise = developerError "Vector equality coefficients should currently all be magnitude 1.0"
-  let constant = constantExpr dimensions (Vector.map (* (-1)) constantValue)
-  let varCoeffList = Map.toList coefficients
-  return (var, foldr combFn constant varCoeffList)
-  where
-    mkTensorType :: WHNFType Builtin -> WHNFType Builtin -> WHNFType Builtin
-    mkTensorType tElem dims = VFreeVar TensorIdent [Arg mempty Explicit Relevant tElem, Arg mempty Explicit Irrelevant dims]
-
-    mkRatVectorAdd :: [WHNFValue Builtin] -> [WHNFValue Builtin] -> WHNFValue Builtin
-    mkRatVectorAdd = mkVectorOp (Add AddRat) StdAddVector
-
-    mkRatVectorSub :: [WHNFValue Builtin] -> [WHNFValue Builtin] -> WHNFValue Builtin
-    mkRatVectorSub = mkVectorOp (Sub SubRat) StdSubVector
-
-    mkVectorOp ::
-      BuiltinFunction ->
-      StdLibFunction ->
-      [WHNFValue Builtin] ->
-      [WHNFValue Builtin] ->
-      WHNFValue Builtin
-    mkVectorOp baseOp libOp dims spine = case dims of
-      [] -> VBuiltinFunction baseOp (Arg mempty Explicit Relevant <$> spine)
-      (d : ds) ->
-        VFreeVar
-          (identifierOf libOp)
-          ( [ Arg p (Implicit True) Relevant vecType,
-              Arg p (Implicit True) Relevant vecType,
-              Arg p (Implicit True) Relevant vecType,
-              Arg p (Implicit True) Irrelevant d,
-              Arg p (Instance True) Relevant (mkVectorOp baseOp libOp ds [])
-            ]
-              <> fmap (Arg p Explicit Relevant) spine
-          )
-        where
-          p = mempty; vecType = mkTensorType VRatType (mkVList ds)
 
 compileVectorEquality ::
   (MonadSMT m) =>
@@ -306,6 +257,69 @@ compilerVectorLinearExpr variables dimensions = go
       VVecLiteral xs -> mconcat <$> traverse (isConstant . argExpr) xs
       VRatLiteral r -> Just $ Vector.singleton (fromRational r)
       _ -> Nothing
+#else
+extractSolvableVectorEqualities ::
+  forall m.
+  (MonadSMT m) =>
+  MixedVariableCtx ->
+  BooleanExpr UnreducedAssertion ->
+  m ([(UnreducedAssertion, SolvableAssertion)], Maybe (BooleanExpr UnreducedAssertion))
+extractSolvableVectorEqualities _mixedVariables expr =
+  return ([], Just expr)
+#endif
+
+-- | Converts a Gaussian elimination solution for a user variable back to a
+-- Vehicle expression.
+solutionToExpr ::
+  (MonadCompile m) =>
+  MixedVariableCtx ->
+  (UserVariable, SparseLinearExpr MixedVariable) ->
+  m (UserVariable, WHNFValue Builtin)
+solutionToExpr variables (var, Sparse {..}) = do
+  let findVarIx v = Ix $ fromMaybe (developerError ("Variable" <+> pretty var <+> "not found")) (v `elemIndex` variables)
+  let toExprVar v = VBoundVar (dbIndexToLevel (Lv $ length variables) (findVarIx v)) []
+  let addFn e1 e2 = mkRatVectorAdd (VNatLiteral <$> dimensions) [e1, e2]
+  let subFn e1 e2 = mkRatVectorSub (VNatLiteral <$> dimensions) [e1, e2]
+  -- Need to negate the coefficients as we're rearranging the equation.
+  let combFn (v, c) e
+        | v == UserVar var = e
+        | c == 1.0 = subFn e (toExprVar v)
+        | c == -1.0 = addFn e (toExprVar v)
+        | otherwise = developerError "Vector equality coefficients should currently all be magnitude 1.0"
+  let constant = constantExpr dimensions (Vector.map (* (-1)) constantValue)
+  let varCoeffList = Map.toList coefficients
+  return (var, foldr combFn constant varCoeffList)
+  where
+    mkTensorType :: WHNFType Builtin -> WHNFType Builtin -> WHNFType Builtin
+    mkTensorType tElem dims = VFreeVar TensorIdent [Arg mempty Explicit Relevant tElem, Arg mempty Explicit Irrelevant dims]
+
+    mkRatVectorAdd :: [WHNFValue Builtin] -> [WHNFValue Builtin] -> WHNFValue Builtin
+    mkRatVectorAdd = mkVectorOp (Add AddRat) StdAddVector
+
+    mkRatVectorSub :: [WHNFValue Builtin] -> [WHNFValue Builtin] -> WHNFValue Builtin
+    mkRatVectorSub = mkVectorOp (Sub SubRat) StdSubVector
+
+    mkVectorOp ::
+      BuiltinFunction ->
+      StdLibFunction ->
+      [WHNFValue Builtin] ->
+      [WHNFValue Builtin] ->
+      WHNFValue Builtin
+    mkVectorOp baseOp libOp dims spine = case dims of
+      [] -> VBuiltinFunction baseOp (Arg mempty Explicit Relevant <$> spine)
+      (d : ds) ->
+        VFreeVar
+          (identifierOf libOp)
+          ( [ Arg p (Implicit True) Relevant vecType,
+              Arg p (Implicit True) Relevant vecType,
+              Arg p (Implicit True) Relevant vecType,
+              Arg p (Implicit True) Irrelevant d,
+              Arg p (Instance True) Relevant (mkVectorOp baseOp libOp ds [])
+            ]
+              <> fmap (Arg p Explicit Relevant) spine
+          )
+        where
+          p = mempty; vecType = mkTensorType VRatType (mkVList ds)
 
 --------------------------------------------------------------------------------
 -- Variable reduction

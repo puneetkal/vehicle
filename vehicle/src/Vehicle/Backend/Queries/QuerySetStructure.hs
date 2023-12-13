@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Vehicle.Backend.Queries.QuerySetStructure
   ( SeriousPropertyError (..),
     PropertyError (..),
@@ -10,10 +12,15 @@ where
 
 import Control.Monad.Except (MonadError (..))
 import Control.Monad.Reader (MonadReader (..), ReaderT (..))
+#ifdef selectiveUnfolding
 import Data.HashSet qualified as HashSet (fromList, intersection, null)
 import Data.Map qualified as Map (keysSet)
+#endif
 import Data.Set (Set)
-import Data.Set qualified as Set (fromList, intersection, map, null)
+import Data.Set qualified as Set (fromList)
+#ifdef selectiveUnfolding
+import Data.Set qualified as Set (intersection, map, null)
+#endif
 import Vehicle.Backend.Queries.IfElimination (eliminateIfs, unfoldIf)
 import Vehicle.Backend.Queries.LinearExpr (UnreducedAssertion (..), VectorEquality (..))
 import Vehicle.Backend.Queries.UsedFunctions
@@ -374,6 +381,7 @@ compileFiniteQuantifier quantifiedVariables q quantSpine binder env body = do
       normResult <- evalApp queryStructureNBEOptions quantImplementation quantifierExpr
       compileBoolExpr quantifiedVariables normResult
 
+#ifdef selectiveUnfolding
 -- | This is a sound, inexpensive, but incomplete, check for whether
 -- we can leave the finite quantifier folded as it will only contain
 -- conjunctions.
@@ -396,6 +404,15 @@ canLeaveFiniteQuantifierUnexpanded env expr = do
   let networks = Set.map (Identifier User) (Map.keysSet networkCtx)
   let doesNotHaveNetwork = Set.null (Set.intersection usedFreeVars networks)
   return $ doesNotHaveDisjunction && doesNotHaveNetwork
+#else
+canLeaveFiniteQuantifierUnexpanded ::
+  (MonadQueryStructure m) =>
+  WHNFEnv Builtin ->
+  Expr Ix Builtin ->
+  m Bool
+canLeaveFiniteQuantifierUnexpanded _env _expr =
+  return False
+#endif
 
 --------------------------------------------------------------------------------
 -- Infinite quantifier elimination
