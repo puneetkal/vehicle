@@ -28,6 +28,9 @@ type MonadCompileLinearExpr m =
 
 data NonLinearity = NonLinearity
 
+--------------------------------------------------------------------------------
+-- Rational expression
+
 compileRatLinearRelation ::
   (MonadLogger m) =>
   (Lv -> ExceptT NonLinearity m RationalVariable) ->

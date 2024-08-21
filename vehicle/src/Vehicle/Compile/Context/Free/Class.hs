@@ -1,5 +1,6 @@
 module Vehicle.Compile.Context.Free.Class where
 
+import Control.Monad.Except (ExceptT, mapExceptT)
 import Control.Monad.Identity (IdentityT, mapIdentityT)
 import Control.Monad.Reader (ReaderT (..), mapReaderT)
 import Control.Monad.State (StateT (..), mapStateT)
@@ -68,6 +69,12 @@ instance (MonadFreeContext builtin m) => MonadFreeContext builtin (SupplyT s m) 
   getFreeCtx = lift . getFreeCtx
   getHiddenStdLibDecl p = lift . getHiddenStdLibDecl p
   hideStdLibDecls p = mapSupplyT . hideStdLibDecls p
+
+instance (MonadFreeContext builtin m) => MonadFreeContext builtin (ExceptT s m) where
+  addDeclEntryToContext = mapExceptT . addDeclEntryToContext
+  getFreeCtx = lift . getFreeCtx
+  getHiddenStdLibDecl p = lift . getHiddenStdLibDecl p
+  hideStdLibDecls p = mapExceptT . hideStdLibDecls p
 
 --------------------------------------------------------------------------------
 -- Operations

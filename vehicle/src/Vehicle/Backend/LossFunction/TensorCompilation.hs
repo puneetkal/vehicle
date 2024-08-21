@@ -168,26 +168,37 @@ convertBuiltins b args = do
     L.FoldList -> VBuiltin T.FoldList <$> normArgs
     L.MapList -> VBuiltin T.MapList <$> normArgs
     L.ForeachIndex -> convertForeachIndex =<< normArgs
-    ----------------------
-    -- Other operations --
-    ----------------------
-    L.Search -> do
-      boundCtx <- getNamedBoundCtx (Proxy @MixedLossValue)
-      let namedCtx = fmap (fromMaybe "<nameless>") boundCtx
-      case args of
-        [unionOp, argExpr -> VLam binder (StandardClos closure)] -> do
-          tensorUnionOp <- traverse convertLossToTensorValue unionOp
-          tensorBinder <- traverse convertLossToTensorValue binder
-          (Domain {..}, newBody) <- extractSearchDomain _ _ _ closure
-          let tensorLowerBounds = explicit lowerBound
-          let tensorUpperBounds = explicit upperBound
-          lossBody <- switchToMonadLogic $ convertToLossBuiltins newBody
-          tensorBody <- explicit . VLam tensorBinder . NFClosure <$> convertLossToTensorValue lossBody
-          let newArgs = [tensorUnionOp, tensorLowerBounds, tensorUpperBounds, tensorBody]
-          return $ VBuiltin (T.SearchRatTensor namedCtx) newArgs
-        _ -> unexpectedExprError currentPass (prettyVerbose $ VBuiltin L.Search args)
+    L.Search -> convertSearch args
   where
     unsupportedTypeError op = compilerDeveloperError $ "Conversion of" <+> pretty op <+> "not yet supported"
+
+convertSearch :: (MonadTensor m) => MixedLossSpine -> m (NFValue TensorBuiltin)
+convertSearch args = do
+  case args of
+    [unionOp, argExpr -> VLam binder (StandardClos closure)] -> do
+      -- Extract the context
+      boundCtx <- getNamedBoundCtx (Proxy @MixedLossValue)
+      let namedCtx = fmap (fromMaybe "<nameless>") boundCtx
+
+      -- Convert the union operation (for combining search results) and the binder.
+      tensorUnionOp <- traverse convertLossToTensorValue unionOp
+      tensorBinder <- traverse convertLossToTensorValue binder
+
+      -- Extract the domain for the search
+      declProv <- getDeclProvenance
+      (Domain {..}, newBody) <- extractSearchDomain declProv binder (boundCtxLv boundCtx) closure
+      let tensorLowerBounds = explicit lowerBound
+      let tensorUpperBounds = explicit upperBound
+
+      -- Convert the new body of the predicate
+      lossBody <- switchToMonadLogic $ convertToLossBuiltins newBody
+      tensorPredicate <- explicit . VLam tensorBinder . NFClosure <$> convertLossToTensorValue lossBody
+
+      -- Extract the domain for the search
+      let newArgs = [tensorUnionOp, tensorLowerBounds, tensorUpperBounds, tensorPredicate]
+
+      return $ VBuiltin (T.SearchRatTensor namedCtx) newArgs
+    _ -> unexpectedExprError currentPass (prettyVerbose $ VBuiltin L.Search args)
 
 convertVectorType :: (MonadTensor m) => [NFArg TensorBuiltin] -> m (NFValue TensorBuiltin)
 convertVectorType = \case
