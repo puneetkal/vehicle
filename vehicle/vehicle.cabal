@@ -180,6 +180,7 @@ library
     Vehicle.Backend.Agda.Interact
     Vehicle.Backend.LossFunction
     Vehicle.Backend.LossFunction.Core
+    Vehicle.Backend.LossFunction.Domain
     Vehicle.Backend.LossFunction.Logics
     Vehicle.Backend.Queries
     Vehicle.Backend.Queries.ConstraintSearch

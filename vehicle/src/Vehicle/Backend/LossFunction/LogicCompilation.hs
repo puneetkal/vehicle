@@ -194,8 +194,7 @@ normStandardExprToLoss ::
   m MixedLossValue
 normStandardExprToLoss boundEnv expr = do
   standardValue <- normaliseInEnv boundEnv expr
-  result <- convertToLossBuiltins standardValue
-  return result
+  convertToLossBuiltins standardValue
 
 normLossExprToLoss ::
   (MonadLogic m) =>

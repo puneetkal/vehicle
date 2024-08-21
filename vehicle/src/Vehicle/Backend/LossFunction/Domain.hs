@@ -1,7 +1,14 @@
-{-
-module Vehicle.Backend.LossFunction.Domain where
+module Vehicle.Backend.LossFunction.Domain
+  ( extractSearchDomain,
+    Domain (..),
+  )
+where
 
+import Control.Applicative (Applicative (..))
+import Control.Monad (when)
 import Control.Monad.Except (MonadError (..), runExceptT, void)
+import Control.Monad.Reader (MonadReader (..), ReaderT (..))
+import Data.Either (partitionEithers)
 import Data.Map (Map)
 import Data.Map qualified as Map
 import Data.Proxy (Proxy (..))
@@ -11,21 +18,18 @@ import Vehicle.Compile.Boolean.LowerNot (lowerNot)
 import Vehicle.Compile.Boolean.Unblock (ReduceVectorVars, UnblockingActions (..))
 import Vehicle.Compile.Boolean.Unblock qualified as Unblocking
 import Vehicle.Compile.Context.Bound (MonadBoundContext, getNamedBoundCtx)
+import Vehicle.Compile.Context.Free (MonadFreeContext)
 import Vehicle.Compile.Error (CompileError (..), MonadCompile)
 import Vehicle.Compile.Normalise.NBE (normaliseInEnv)
 import Vehicle.Compile.Prelude
 import Vehicle.Compile.Rational.LinearExpr
 import Vehicle.Compile.Variable (createUserVar)
 import Vehicle.Data.Builtin.Standard
+import Vehicle.Data.Builtin.Tensor (TensorBuiltin)
 import Vehicle.Data.Expr.Interface
-import Vehicle.Data.Expr.Normalised
-import Vehicle.Compile.Context.Free (MonadFreeContext)
-import Control.Applicative (Applicative(..))
-import Control.Monad.Reader (MonadReader (..), ReaderT (..))
-import Vehicle.Data.QuantifiedVariable
-import Control.Monad (when)
 import Vehicle.Data.Expr.Linear (addExprs, rearrangeExprToSolveFor)
-import Data.Either (partitionEithers)
+import Vehicle.Data.Expr.Normalised
+import Vehicle.Data.QuantifiedVariable
 
 type MonadDomain m =
   ( MonadCompile m,
@@ -34,15 +38,15 @@ type MonadDomain m =
   )
 
 type MonadSearch m =
-  ( MonadDomain m
-  , MonadReader VariableInfo m
+  ( MonadDomain m,
+    MonadReader VariableInfo m
   )
 
 -- | Information for the variable whose domain we are trying to find.
 data VariableInfo = VariableInfo
-  { variableLv :: Lv
-  , vectorExpr :: WHNFValue Builtin
-  , reducedVars :: [(Lv, UserRationalVariable)]
+  { variableLv :: Lv,
+    vectorExpr :: WHNFValue Builtin,
+    reducedVars :: [(Lv, UserRationalVariable)]
   }
 
 extractSearchDomain ::
@@ -51,7 +55,7 @@ extractSearchDomain ::
   MixedLossBinder ->
   Lv ->
   WHNFClosure Builtin ->
-  m (Maybe (Domain, WHNFValue Builtin))
+  m (Domain, WHNFValue Builtin)
 extractSearchDomain propertyProv binder lv (WHNFClosure env expr) = do
   -- Convert the binder
   namedCtx <- getNamedBoundCtx (Proxy @MixedLossValue)
@@ -72,7 +76,7 @@ extractSearchDomain propertyProv binder lv (WHNFClosure env expr) = do
       let maybeDomain = extractDomainFromConstraints constraints (userTensorVarDimensions userVar) reducedUseVars
       case maybeDomain of
         Left missingCostraints -> throwError $ NoQuantifierDomainFound propertyProv (void binder) (Just missingCostraints)
-        Right domain -> return $ Just (domain, remainder)
+        Right domain -> return (domain, remainder)
 
 --------------------------------------------------------------------------------
 -- Constraints
@@ -106,8 +110,8 @@ updateConstrainedValue originalExpr = \case
 -- Domain
 
 data Domain = Domain
-  { lowerBound :: WHNFValue Builtin,
-    upperBound :: WHNFValue Builtin
+  { lowerBound :: NFValue TensorBuiltin,
+    upperBound :: NFValue TensorBuiltin
   }
 
 extractDomainFromConstraints ::
@@ -115,7 +119,7 @@ extractDomainFromConstraints ::
   TensorShape ->
   [(Lv, UserRationalVariable)] ->
   Either [(UserRationalVariable, UnderConstrainedVariableStatus)] Domain
-extractDomainFromConstraints VariableConstraints{..} tensorShape allVariables = do
+extractDomainFromConstraints VariableConstraints {..} tensorShape allVariables = do
   let lowerBoundExprs = flip map allVariables $ \(lv, var) ->
         case (Map.lookup lv lowerBounds, Map.lookup lv upperBounds) of
           (Just x, Just y) -> Right (x, y)
@@ -228,10 +232,11 @@ unblockBoundVectorVariable ::
   Lv ->
   m (WHNFValue Builtin)
 unblockBoundVectorVariable lv = do
-  VariableInfo{..} <- ask
+  VariableInfo {..} <- ask
 
   when (lv /= variableLv) $
-    throwError $ VBoundVar lv []
+    throwError $
+      VBoundVar lv []
 
   return vectorExpr
 
@@ -252,4 +257,3 @@ handleRatInequality op e1 e2 = do
       let le = addExprs 1 (-1) le1 le2
       let (_, rearrangedExpr) = rearrangeExprToSolveFor _ le
       return _
--}

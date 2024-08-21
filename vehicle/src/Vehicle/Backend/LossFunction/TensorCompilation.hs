@@ -12,13 +12,14 @@ import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (..))
 import Data.Ratio
 import Vehicle.Backend.LossFunction.Core
+import Vehicle.Backend.LossFunction.Domain (Domain (..), extractSearchDomain)
 import Vehicle.Backend.LossFunction.LogicCompilation
 import Vehicle.Backend.Prelude (DifferentiableLogicID)
 import Vehicle.Compile.Context.Bound
 import Vehicle.Compile.Context.Free.Class (MonadFreeContext)
 import Vehicle.Compile.Error
 import Vehicle.Compile.Prelude
-import Vehicle.Compile.Print (PrettyFriendly, prettyFriendly)
+import Vehicle.Compile.Print (PrettyFriendly, prettyFriendly, prettyVerbose)
 import Vehicle.Data.Builtin.Loss (LossBuiltin)
 import Vehicle.Data.Builtin.Loss qualified as L
 import Vehicle.Data.Builtin.Tensor (TensorBuiltin)
@@ -144,7 +145,7 @@ convertBuiltins b args = do
     L.Index i -> VBuiltin (T.Index i) <$> normArgs
     L.Bool v -> return $ T.VBoolTensor (Tensor [] [v])
     L.Nat v -> VBuiltin (T.Nat v) <$> normArgs
-    L.Rat v -> return $ constRatTensor (T.convertRat v)
+    L.Rat v -> return $ constRatTensor v
     L.Vector -> convertVector =<< normArgs
     ----------------
     -- Operations --
@@ -171,10 +172,20 @@ convertBuiltins b args = do
     -- Other operations --
     ----------------------
     L.Search -> do
-      let op = T.SearchRatTensor
       boundCtx <- getNamedBoundCtx (Proxy @MixedLossValue)
       let namedCtx = fmap (fromMaybe "<nameless>") boundCtx
-      VBuiltin (op namedCtx) <$> normArgs
+      case args of
+        [unionOp, argExpr -> VLam binder (StandardClos closure)] -> do
+          tensorUnionOp <- traverse convertLossToTensorValue unionOp
+          tensorBinder <- traverse convertLossToTensorValue binder
+          (Domain {..}, newBody) <- extractSearchDomain _ _ _ closure
+          let tensorLowerBounds = explicit lowerBound
+          let tensorUpperBounds = explicit upperBound
+          lossBody <- switchToMonadLogic $ convertToLossBuiltins newBody
+          tensorBody <- explicit . VLam tensorBinder . NFClosure <$> convertLossToTensorValue lossBody
+          let newArgs = [tensorUnionOp, tensorLowerBounds, tensorUpperBounds, tensorBody]
+          return $ VBuiltin (T.SearchRatTensor namedCtx) newArgs
+        _ -> unexpectedExprError currentPass (prettyVerbose $ VBuiltin L.Search args)
   where
     unsupportedTypeError op = compilerDeveloperError $ "Conversion of" <+> pretty op <+> "not yet supported"
 
@@ -218,9 +229,6 @@ convertVector args = case args of
       comp mk f xs = case traverse (f . argExpr) xs of
         Just constantTensors -> mk $ stack constantTensors
         Nothing -> VBuiltin (T.StackRatTensor (length (a : as))) args
-
-constRatTensor :: T.Rat -> NFValue TensorBuiltin
-constRatTensor v = VBuiltin (T.ConstRatTensor v) [explicit (VBuiltin T.NilList [])]
 
 extendConstRatTensor :: T.Rat -> NFValue TensorBuiltin -> NFArg TensorBuiltin -> NFValue TensorBuiltin
 extendConstRatTensor x dim dims = do

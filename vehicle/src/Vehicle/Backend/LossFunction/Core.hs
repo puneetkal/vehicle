@@ -8,7 +8,9 @@ import GHC.Generics (Generic)
 import Vehicle.Compile.Prelude
 import Vehicle.Data.Builtin.Loss.Core
 import Vehicle.Data.Builtin.Standard.Core (Builtin)
-import Vehicle.Data.Expr.Normalised (BoundEnv, Spine, VBinder, VDecl, Value, WHNFClosure (..))
+import Vehicle.Data.Builtin.Tensor (TensorBuiltin)
+import Vehicle.Data.Builtin.Tensor qualified as T
+import Vehicle.Data.Expr.Normalised (BoundEnv, NFValue, Spine, VBinder, VDecl, Value (..), WHNFClosure (..))
 import Vehicle.Libraries.StandardLibrary.Definitions (StdLibFunction (..))
 
 --------------------------------------------------------------------------------
@@ -68,3 +70,6 @@ preservedStdLibOps =
   Set.fromList
     [ StdForeachIndex
     ]
+
+constRatTensor :: Rational -> NFValue TensorBuiltin
+constRatTensor v = VBuiltin (T.ConstRatTensor $ T.convertRat v) [explicit (VBuiltin T.NilList [])]
